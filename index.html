@@ -238,7 +238,7 @@ function draw(distanceKm){
     fill:'none', stroke:'var(--orange)', 'stroke-width':5, 'stroke-dasharray':'2 6', 'stroke-linecap':'round'
   }));
 
-  // ticks, numeros negros (km/h) y numeros azules (minutos), siempre en la misma posicion angular
+  // ticks y numeros negros (km/h), cada 20 con numero, cada 10 marca menor
   for (let v = minV; v <= maxV; v += 10){
     const isMajor = v % 20 === 0;
     const a = angleFor(v);
@@ -257,17 +257,32 @@ function draw(distanceKm){
         'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':22,
         fill: isRedZone ? 'var(--danger)' : 'var(--ink)'
       }, v));
-
-      if (v > 0){
-        const minutes = (distanceKm / v) * 60;
-        const bp = pt(R+22, a);
-        svg.appendChild(el('text', {
-          x:bp.x.toFixed(2), y:bp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
-          'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':16, fill:'var(--blue)'
-        }, formatMinutes(minutes)));
-      }
     }
   }
+
+  // numeros azules (minutos): mas juntos al principio del dial (velocidad baja),
+  // cada vez mas separados hacia el final (velocidad alta) — el ahorro de tiempo
+  // se nota mucho al empezar a acelerar y cada vez menos despues.
+  const blueSpeeds = [];
+  for (let v = 10; v <= maxV; v += 10){
+    let gap;
+    if (v <= 60) gap = 10;
+    else if (v <= 100) gap = 20;
+    else if (v <= 160) gap = 30;
+    else gap = 40;
+    if (blueSpeeds.length === 0 || v - blueSpeeds[blueSpeeds.length-1] >= gap){
+      blueSpeeds.push(v);
+    }
+  }
+  blueSpeeds.forEach(v => {
+    const a = angleFor(v);
+    const minutes = (distanceKm / v) * 60;
+    const bp = pt(R+22, a);
+    svg.appendChild(el('text', {
+      x:bp.x.toFixed(2), y:bp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
+      'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':16, fill:'var(--blue)'
+    }, formatMinutes(minutes)));
+  });
 
   // textos centrales
   svg.appendChild(el('text', {x:cx, y:cy-2, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':17, fill:'var(--ink)'}, 'Kilómetros por hora'));
