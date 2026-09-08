@@ -50,7 +50,7 @@ body{
   height:100%;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:2px;
   overflow:hidden;
 }
 
@@ -83,7 +83,6 @@ body{
 .gauge-frame{
   position:relative;
   width:100%;
-  height:100%;
   aspect-ratio:1/1;
   max-width:100%;
   max-height:100%;
@@ -418,7 +417,7 @@ function startGPS(){
       setStatus(`GPS activo: ${kmh.toFixed(1)} km/h`);
     },
     err => {
-      setStatus('No se pudo usar el GPS acá (' + err.message + '). Descargá el archivo y abrilo directo en el navegador del celular para darle permiso de ubicación.');
+      setStatus('No se pudo usar el GPS (' + err.message + '). Debe otorgar el permiso de ubicación.');
       gpsActive = false;
       gpsBtn.classList.remove('active');
       gpsBtn.textContent = 'ACTIVAR VELOCIMETRO';
@@ -427,7 +426,7 @@ function startGPS(){
   );
   gpsActive = true;
   gpsBtn.classList.add('active');
-  gpsBtn.textContent = 'Detener GPS';
+  gpsBtn.textContent = 'DETENER VELOCIMETRO';
 }
 
 function stopGPS(){
