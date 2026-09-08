@@ -281,7 +281,7 @@ function draw(distanceKm){
   const blueMinutes = blueSpeeds.map(v => (distanceKm / v) * 60);
   const minMin = Math.min(...blueMinutes);
   const maxMin = Math.max(...blueMinutes);
-  const minFont = 10, maxFont = 18;
+  const minFont = 12, maxFont = 21;
   const blueRadius = R + 32;
   const marginToEdge = faceR - blueRadius; // espacio libre entre el numero y el borde de la cara
   blueSpeeds.forEach((v, i) => {
@@ -355,7 +355,7 @@ function draw(distanceKm){
   // textos centrales
   svg.appendChild(el('text', {x:cx, y:cy-2, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':17, fill:'var(--ink)'}, 'Kilómetros por hora'));
   const distLabel = distanceKm % 1 === 0 ? distanceKm.toFixed(0) : distanceKm.toFixed(1);
-  svg.appendChild(el('text', {x:cx, y:cy+20, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':600, 'font-size':14, fill:'var(--blue)'}, `Minutos por ${distLabel} km`));
+  svg.appendChild(el('text', {x:cx, y:cy+20, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':600, 'font-size':12, fill:'var(--blue)'}, `Tiempo en que se recorren ${distLabel} km`));
 
   const liveSpeed = el('text', {x:cx, y:cy+44, 'text-anchor':'middle', 'font-family':'IBM Plex Mono, monospace', 'font-weight':600, 'font-size':16, fill:'var(--danger)'}, '');
   liveSpeed.id = 'liveSpeedText';
