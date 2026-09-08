@@ -108,10 +108,17 @@ svg{display:block; width:100%; height:100%;}
   margin-bottom:3px;
   text-transform:lowercase;
 }
+.dist-overlay-inputrow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+}
 .dist-overlay input{
   box-sizing:border-box;
   width:100%;
-  max-width:100%;
+  min-width:0;
+  flex:1 1 auto;
   background:var(--asphalt);
   border:1px solid var(--line);
   color:var(--paint);
@@ -122,6 +129,13 @@ svg{display:block; width:100%; height:100%;}
   border-radius:6px;
 }
 .dist-overlay input:focus{outline:none; border-color:var(--marker);}
+.dist-overlay-unit{
+  flex:0 0 auto;
+  font-family:'Oswald', sans-serif;
+  font-weight:600;
+  font-size:12px;
+  color:var(--marker);
+}
 
 .panel{
   flex:0 0 auto;
@@ -166,10 +180,13 @@ svg{display:block; width:100%; height:100%;}
 
   <div class="gauge-shell">
     <div class="gauge-frame">
-      <svg id="gauge" viewBox="0 0 420 420"></svg>
+      <svg id="gauge" viewBox="0 0 450 450"></svg>
       <div class="dist-overlay">
-        <div class="dist-overlay-label">ingresa distancia que vas a recorrer</div>
-        <input type="number" id="distInput" value="10" step="0.1" min="0.1">
+        <div class="dist-overlay-label">ingresa kilometros que recorreras</div>
+        <div class="dist-overlay-inputrow">
+          <input type="number" id="distInput" value="10" step="0.1" min="0.1">
+          <span class="dist-overlay-unit">Km</span>
+        </div>
       </div>
     </div>
   </div>
@@ -184,7 +201,7 @@ svg{display:block; width:100%; height:100%;}
 
 <script>
 const NS = 'http://www.w3.org/2000/svg';
-const cx = 210, cy = 210, R = 160, faceR = 207;
+const cx = 225, cy = 225, R = 165, faceR = 222;
 const minV = 0, maxV = 200; // km/h, escala tipo velocímetro de auto
 const startAngle = 240, sweep = 240;
 
@@ -212,7 +229,12 @@ let needleGroup = null;
 let currentSpeedKmh = 0;
 
 function formatMinutes(m){
-  if (m >= 100) return Math.round(m).toString();
+  if (m >= 60){
+    const totalMin = Math.round(m);
+    const h = Math.floor(totalMin / 60);
+    const mm = totalMin % 60;
+    return `${h}h:${mm.toString().padStart(2,'0')}`;
+  }
   if (m >= 10) return Math.round(m).toString();
   return m.toFixed(1);
 }
@@ -260,17 +282,23 @@ function draw(distanceKm){
   const blueMinutes = blueSpeeds.map(v => (distanceKm / v) * 60);
   const minMin = Math.min(...blueMinutes);
   const maxMin = Math.max(...blueMinutes);
-  const minFont = 12, maxFont = 24;
+  const minFont = 10, maxFont = 18;
+  const blueRadius = R + 32;
+  const marginToEdge = faceR - blueRadius; // espacio libre entre el numero y el borde de la cara
   blueSpeeds.forEach((v, i) => {
     const a = angleFor(v);
     const minutes = blueMinutes[i];
+    const label = formatMinutes(minutes);
     const t = maxMin > minMin ? (minutes - minMin) / (maxMin - minMin) : 0;
-    const fontSize = minFont + (maxFont - minFont) * t;
-    const bp = pt(R+22, a);
+    let fontSize = minFont + (maxFont - minFont) * t;
+    // que el ancho estimado del texto nunca sobrepase el margen hasta el borde de la cara
+    const maxFontForLabel = (marginToEdge * 2) / (label.length * 0.62);
+    fontSize = Math.max(minFont, Math.min(fontSize, maxFontForLabel, maxFont));
+    const bp = pt(blueRadius, a);
     svg.appendChild(el('text', {
       x:bp.x.toFixed(2), y:bp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
       'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':fontSize.toFixed(1), fill:'var(--blue)'
-    }, formatMinutes(minutes)));
+    }, label));
   });
 
   // diferencias entre numeros azules consecutivos: flecha curva - numero - flecha curva,
@@ -283,13 +311,13 @@ function draw(distanceKm){
     if (diff <= 0.05) continue;
     const midV = (v1 + v2) / 2;
     const aMid = angleFor(midV);
-    const diffLabel = diff >= 10 ? Math.round(diff).toString() : diff.toFixed(1);
+    const diffLabel = formatMinutes(diff);
 
     // numero de diferencia, rotado para seguir la curvatura del circulo
     const tp = pt(diffR, aMid);
     svg.appendChild(el('text', {
       x:tp.x.toFixed(2), y:tp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
-      'font-family':'IBM Plex Mono, monospace', 'font-weight':700, 'font-size':12, fill:'var(--diff)', opacity:0.95,
+      'font-family':'IBM Plex Mono, monospace', 'font-weight':700, 'font-size':10, fill:'var(--diff)', opacity:0.95,
       transform:`rotate(${aMid.toFixed(2)} ${tp.x.toFixed(2)} ${tp.y.toFixed(2)})`
     }, diffLabel));
 
