@@ -71,6 +71,7 @@ body{
 }
 
 .gauge-shell{
+  position:relative;
   flex:1 1 auto;
   min-height:0;
   background:var(--asphalt-2);
@@ -80,6 +81,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
 }
 .gauge-frame{
   position:relative;
@@ -137,6 +139,74 @@ svg{display:block; width:100%; height:100%;}
   color:var(--marker);
 }
 
+/* Informe grande sobre el velocímetro */
+.report-overlay{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(20, 23, 26, 0.96);
+  z-index:20;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  text-align:center;
+  border-radius:10px;
+  overflow-y:auto;
+}
+.report-overlay.active{
+  display:flex;
+}
+.report-title{
+  font-family:'Oswald', sans-serif;
+  font-size:22px;
+  font-weight:700;
+  color:var(--marker);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+.report-avg{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:16px;
+  font-weight:600;
+  color:var(--paint);
+  margin-bottom:14px;
+}
+.report-savings-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  width:100%;
+  max-width:360px;
+  margin-bottom:16px;
+}
+.report-saving-item{
+  background:var(--asphalt);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:12px;
+  color:var(--paint-dim);
+}
+.report-saving-item span{
+  color:var(--marker);
+  font-weight:700;
+}
+.report-close-btn{
+  background:var(--danger);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:8px 20px;
+  font-family:'Oswald', sans-serif;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+}
+
 .panel{
   flex:0 0 auto;
   background:var(--asphalt-2);
@@ -172,87 +242,11 @@ svg{display:block; width:100%; height:100%;}
   color:var(--paint-dim);
   line-height:1.4;
 }
-
-/* Modal de Informe de Viaje */
-.modal-overlay{
-  position:fixed;
-  top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.8);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999;
-  padding:16px;
-}
-.modal-card{
-  background:var(--asphalt-2);
-  border:1px solid var(--marker);
-  border-radius:12px;
-  padding:20px;
-  width:100%;
-  max-width:420px;
-  text-align:center;
-  box-shadow:0 8px 24px rgba(0,0,0,0.5);
-}
-.modal-card h2{
-  font-family:'Oswald', sans-serif;
-  color:var(--marker);
-  margin-top:0;
-  margin-bottom:12px;
-  font-size:20px;
-}
-.modal-stats{
-  display:flex;
-  justify-content:space-around;
-  margin-bottom:16px;
-  background:var(--asphalt);
-  padding:10px;
-  border-radius:8px;
-  border:1px solid var(--line);
-}
-.modal-stat-box div:first-child{
-  font-size:10px;
-  color:var(--paint-dim);
-  text-transform:lowercase;
-}
-.modal-stat-box div:last-child{
-  font-family:'Oswald', sans-serif;
-  font-size:18px;
-  color:var(--paint);
-}
-.savings-list{
-  text-align:left;
-  font-size:12px;
-  background:var(--asphalt);
-  padding:10px 14px;
-  border-radius:8px;
-  border:1px solid var(--line);
-  margin-bottom:16px;
-  max-height:140px;
-  overflow-y:auto;
-}
-.savings-list div{
-  padding:4px 0;
-  border-bottom:1px dashed var(--line);
-}
-.savings-list div:last-child{ border-bottom:none; }
-.modal-close-btn{
-  background:var(--marker);
-  color:var(--ink);
-  border:none;
-  border-radius:6px;
-  padding:10px 20px;
-  font-family:'Oswald', sans-serif;
-  font-weight:600;
-  font-size:14px;
-  cursor:pointer;
-  width:100%;
-}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p class="subtitle">Cuando manejas, mientras más aceleras menos te demoras, sin embargo, ese ahorro no es parejo; pasar de 40 a 60 km/h te ahorra mucho más tiempo que pasar de 100 a 120 km/h, aunque en ambos casos aceleres lo mismo. Agrega los kilómetros que recorrerás a este velocímetro y mira cómo la escala azul exterior marca los minutos que tardarás en recorrer la distancia que elijas.</p>
+  <p class="subtitle">Cuando manejas, mientras más aceleras menos te demoras, sin embargo, ese ahorro no es parejo; pasar de 40 a 60 km/h te ahorra mucho más tiempo que pasar de 100 a 120 km/h[cite: 1], aunque en ambos casos aceleres lo mismo[cite: 1]. Agrega los kilómetros que recorrerás a este velocímetro y mira cómo la escala azul exterior marca los minutos que tardarás en recorrer la distancia que elijas[cite: 1].</p>
 
   <div class="gauge-shell">
     <div class="gauge-frame">
@@ -265,6 +259,14 @@ svg{display:block; width:100%; height:100%;}
         </div>
       </div>
     </div>
+
+    <!-- Informe grande sobre el velocímetro -->
+    <div class="report-overlay" id="reportOverlay">
+      <div class="report-title">Informe de Viaje</div>
+      <div class="report-avg" id="reportAvgText">Velocidad promedio: 0.0 km/h</div>
+      <div class="report-savings-list" id="reportSavingsList"></div>
+      <button class="report-close-btn" id="reportCloseBtn">CERRAR INFORME</button>
+    </div>
   </div>
 
   <div class="panel">
@@ -272,27 +274,6 @@ svg{display:block; width:100%; height:100%;}
       <button class="gps-btn" id="gpsBtn">ACTIVAR VELOCIMETRO</button>
       <div class="gps-status" id="gpsStatus"></div>
     </div>
-  </div>
-</div>
-
-<!-- Modal de Informe -->
-<div class="modal-overlay" id="reportModal">
-  <div class="modal-card">
-    <h2>INFORME DE VIAJE</h2>
-    <div class="modal-stats">
-      <div class="modal-stat-box">
-        <div>velocidad promedio</div>
-        <div id="repAvgSpeed">0 km/h</div>
-      </div>
-      <div class="modal-stat-box">
-        <div>duración</div>
-        <div id="repDuration">0 min</div>
-      </div>
-    </div>
-    <div class="savings-list" id="repSavingsList">
-      <!-- Se llena dinámicamente -->
-    </div>
-    <button class="modal-close-btn" id="modalCloseBtn">ENTENDIDO</button>
   </div>
 </div>
 
@@ -324,6 +305,10 @@ function arcPath(radius, a1, a2){
 const svg = document.getElementById('gauge');
 let needleGroup = null;
 let currentSpeedKmh = 0;
+
+// Variables para el registro de viaje
+let speedSamples = [];
+let startTime = null;
 
 function formatMinutes(m){
   if (m >= 60){
@@ -509,44 +494,22 @@ function updateNeedle(speedKmh){
   needleGroup.setAttribute('transform', `rotate(${a} ${cx} ${cy})`);
   const liveSpeed = document.getElementById('liveSpeedText');
   if (liveSpeed) liveSpeed.textContent = gpsActive ? `${speedKmh.toFixed(1)} km/h` : '';
+
+  if (gpsActive) {
+    speedSamples.push(speedKmh);
+  }
 }
 
 const distInput = document.getElementById('distInput');
 const gpsBtn = document.getElementById('gpsBtn');
 const gpsStatus = document.getElementById('gpsStatus');
+const reportOverlay = document.getElementById('reportOverlay');
+const reportAvgText = document.getElementById('reportAvgText');
+const reportSavingsList = document.getElementById('reportSavingsList');
+const reportCloseBtn = document.getElementById('reportCloseBtn');
+
 let gpsActive = false;
 let watchId = null;
-
-// Variables para el registro de estadísticas del viaje
-let tripStartTime = null;
-let speedReadings = [];
-let lastPosition = null;
-let totalDistanceTraveledKm = 0;
-
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  const R_earth = 6371; // Radio de la tierra en km
-  const dLat = deg2rad(lat2 - lat1);
-  const dLon = deg2rad(lon2 - lon1);
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2); 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  return R_earth * c;
-}
-function deg2rad(deg) {
-  return deg * (Math.PI/180);
-}
-
-const reportModal = document.getElementById('reportModal');
-const modalCloseBtn = document.getElementById('modalCloseBtn');
-const repAvgSpeed = document.getElementById('repAvgSpeed');
-const repDuration = document.getElementById('repDuration');
-const repSavingsList = document.getElementById('repSavingsList');
-
-modalCloseBtn.addEventListener('click', () => {
-  reportModal.style.display = 'none';
-});
 
 function currentDist(){
   const v = parseFloat(distInput.value);
@@ -568,17 +531,12 @@ function startGPS(){
     return;
   }
   if (!window.isSecureContext){
-    setStatus('El GPS necesita HTTPS.');
+    setStatus('El GPS necesita HTTPS. Subilo a un hosting con https y abrilo desde ahí.');
     return;
   }
+  speedSamples = [];
+  startTime = Date.now();
   setStatus('Pidiendo permiso de ubicación…');
-  
-  // Reiniciar métricas
-  tripStartTime = Date.now();
-  speedReadings = [];
-  lastPosition = null;
-  totalDistanceTraveledKm = 0;
-
   watchId = navigator.geolocation.watchPosition(
     pos => {
       let speedMs = pos.coords.speed;
@@ -586,18 +544,6 @@ function startGPS(){
       const kmh = speedMs * 3.6;
       updateNeedle(kmh);
       setStatus(`GPS activo: ${kmh.toFixed(1)} km/h`);
-
-      // Registrar datos para el informe
-      speedReadings.push(kmh);
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      if (lastPosition) {
-        const distStep = getDistanceFromLatLonInKm(lastPosition.lat, lastPosition.lon, lat, lon);
-        if (distStep < 5) { // Filtrar saltos erróneos de GPS
-          totalDistanceTraveledKm += distStep;
-        }
-      }
-      lastPosition = { lat, lon };
     },
     err => {
       setStatus('No se pudo usar el GPS (' + err.message + ').');
@@ -621,59 +567,53 @@ function stopGPS(){
   setStatus('GPS detenido.');
   updateNeedle(0);
 
-  // Calcular métricas finales del viaje
-  const durationMs = tripStartTime ? (Date.now() - tripStartTime) : 0;
-  const durationMinutes = durationMs / 60000;
-  
+  // Calcular velocidad promedio
   let avgSpeed = 0;
-  if (speedReadings.length > 0) {
-    const sum = speedReadings.reduce((a, b) => a + b, 0);
-    avgSpeed = sum / speedReadings.length;
+  if (speedSamples.length > 0) {
+    const sum = speedSamples.reduce((a, b) => a + b, 0);
+    avgSpeed = sum / speedSamples.length;
   }
 
-  // Si la distancia medible por GPS es muy baja, respaldamos con el input del usuario o calculada por tiempo*velocidad
-  let effectiveDistanceKm = totalDistanceTraveledKm;
-  if (effectiveDistanceKm < 0.05 && durationMinutes > 0) {
-    effectiveDistanceKm = (avgSpeed * (durationMinutes / 60));
-  }
-  if (effectiveDistanceKm <= 0) {
-    effectiveDistanceKm = currentDist();
-  }
+  showReport(avgSpeed);
+}
 
-  // Mostrar en el modal
-  repAvgSpeed.textContent = `${avgSpeed.toFixed(1)} km/h`;
-  repDuration.textContent = durationMinutes < 1 ? `${Math.round(durationMs/1000)} seg` : `${durationMinutes.toFixed(1)} min`;
+function showReport(avgSpeed){
+  reportAvgText.textContent = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h`;
+  reportSavingsList.innerHTML = '';
 
-  // Calcular tiempos de referencia a velocidades fijas (80, 100, 120, 140)
+  const d = currentDist();
   const targetSpeeds = [80, 100, 120, 140];
-  repSavingsList.innerHTML = '';
-  
-  let addedCount = 0;
+
+  // Tiempo real estimado con la velocidad promedio (si es 0, evitamos división por cero)
+  const effectiveAvg = avgSpeed > 1 ? avgSpeed : 1;
+  const timeActualHours = d / effectiveAvg;
+
   targetSpeeds.forEach(targetV => {
     if (avgSpeed < targetV) {
-      // Tiempo real estimado con la velocidad promedio (en minutos)
-      const timeRealMin = avgSpeed > 0 ? (effectiveDistanceKm / avgSpeed) * 60 : 0;
-      // Tiempo hipotético si hubiera ido a targetV
-      const timeTargetMin = (effectiveDistanceKm / targetV) * 60;
-      const savedMinutes = timeRealMin - timeTargetMin;
+      const timeTargetHours = d / targetV;
+      const diffHours = timeActualHours - timeTargetHours;
+      const diffMinutes = diffHours * 60;
 
-      if (savedMinutes > 0) {
-        addedCount++;
-        const item = document.createElement('div');
-        item.textContent = `A ${targetV} km/h habrías ahorrado: ${savedMinutes >= 1 ? savedMinutes.toFixed(1) + ' min' : (savedMinutes * 60).toFixed(0) + ' seg'}`;
-        repSavingsList.appendChild(item);
-      }
+      const item = document.createElement('div');
+      item.className = 'report-saving-item';
+      item.innerHTML = `Si hubieras ido a <b>${targetV} km/h</b> habrías ahorrado <span>${diffMinutes.toFixed(1)} min</span>`;
+      reportSavingsList.appendChild(item);
     }
   });
 
-  if (addedCount === 0) {
+  if (reportSavingsList.children.length === 0) {
     const item = document.createElement('div');
-    item.textContent = 'Fuiste a una velocidad alta; no hay ahorros con respecto a los límites de referencia (80, 100, 120, 140 km/h).';
-    repSavingsList.appendChild(item);
+    item.className = 'report-saving-item';
+    item.textContent = 'Tu velocidad promedio fue alta, no hay ahorros que mostrar para los límites seleccionados.';
+    reportSavingsList.appendChild(item);
   }
 
-  reportModal.style.display = 'flex';
+  reportOverlay.classList.add('active');
 }
+
+reportCloseBtn.addEventListener('click', () => {
+  reportOverlay.classList.remove('active');
+});
 
 gpsBtn.addEventListener('click', () => {
   if (gpsActive) stopGPS(); else startGPS();
