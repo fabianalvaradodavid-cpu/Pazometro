@@ -102,13 +102,14 @@ svg{display:block; width:100%; height:100%;}
   box-sizing:border-box;
 }
 .dist-overlay-label{
-  font-family:'IBM Plex Mono', monospace;
-  font-size:8px;
-  font-weight:500;
-  color:var(--paint-dim);
+  font-family:'Oswald', sans-serif;
+  font-size:11px;
+  font-weight:600;
+  color:var(--ink);
   line-height:1.25;
-  margin-bottom:3px;
-  text-transform:lowercase;
+  margin-bottom:4px;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
 }
 .dist-overlay-inputrow{
   display:flex;
@@ -250,7 +251,7 @@ svg{display:block; width:100%; height:100%;}
 
   <div class="gauge-shell">
     <div class="gauge-frame">
-      <svg id="gauge" viewBox="0 0 450 450"></svg>
+      <svg id="gauge" viewBox="0 0 510 510"></svg>
       <div class="dist-overlay">
         <div class="dist-overlay-label">ingresa kilometros que recorreras</div>
         <div class="dist-overlay-inputrow">
@@ -279,7 +280,7 @@ svg{display:block; width:100%; height:100%;}
 
 <script>
 const NS = 'http://www.w3.org/2000/svg';
-const cx = 225, cy = 225, R = 165, faceR = 222;
+const cx = 255, cy = 255, R = 165, faceR = 248;
 const minV = 0, maxV = 200; 
 const startAngle = 240, sweep = 240;
 
@@ -309,6 +310,8 @@ let currentSpeedKmh = 0;
 // Variables para el registro de viaje
 let speedSamples = [];
 let startTime = null;
+let distanceTraveledKm = 0;
+let lastSampleTime = null;
 
 function formatMinutes(m){
   if (m >= 60){
@@ -319,6 +322,11 @@ function formatMinutes(m){
   }
   if (m >= 10) return Math.round(m).toString();
   return m.toFixed(1);
+}
+
+function formatMinutesLabel(m){
+  const base = formatMinutes(m);
+  return m >= 60 ? base : `${base} min`;
 }
 
 function draw(distanceKm){
@@ -342,6 +350,9 @@ function draw(distanceKm){
   }
   const minDiff = diffsValues.length ? Math.min(...diffsValues) : 0;
   const maxDiff = diffsValues.length ? Math.max(...diffsValues) : 1;
+
+  const ref2040 = (distanceKm / 20 * 60) - (distanceKm / 40 * 60);
+  const marginalThreshold = ref2040 / 15;
 
   svg.appendChild(el('circle', {cx, cy, r:faceR, fill:'var(--face)', stroke:'var(--face-line)', 'stroke-width':1.5}));
 
@@ -379,7 +390,7 @@ function draw(distanceKm){
   blueSpeeds.forEach((v, i) => {
     const a = angleFor(v);
     const minutes = blueMinutes[i];
-    const label = formatMinutes(minutes);
+    const label = formatMinutesLabel(minutes);
     const t = maxMin > minMin ? (minutes - minMin) / (maxMin - minMin) : 0;
     let fontSize = minFont + (maxFont - minFont) * t;
     const maxFontForLabel = (marginToEdge * 2) / (label.length * 0.62);
@@ -405,33 +416,8 @@ function draw(distanceKm){
     let diffFontSize = minDiffFont + (maxDiffFont - minDiffFont) * tNorm;
     diffFontSize = Math.max(minDiffFont, diffFontSize);
 
-    const isLessThan10 = diff < 10;
+    const isLessThan10 = diff < marginalThreshold;
     const diffColor = isLessThan10 ? 'var(--diff-low)' : 'var(--diff)';
-
-    if (isLessThan10) {
-      const pathId = `marginal-path-${v1}-${v2}`;
-      const textCurveR = diffR + 7; 
-      const aStartCurve = aMid - 9;
-      const aEndCurve = aMid + 9;
-      const curvePath = arcPath(textCurveR, aStartCurve, aEndCurve);
-      
-      const pathEl = el('path', { id: pathId, d: curvePath, fill: 'none' });
-      defs.appendChild(pathEl);
-
-      const textEl = el('text', {
-        'font-family': 'IBM Plex Mono, monospace',
-        'font-weight': 700,
-        'font-size': 6.5,
-        fill: 'var(--diff-low)'
-      });
-      const textPathEl = el('textPath', {
-        href: `#${pathId}`,
-        'startOffset': '50%',
-        'text-anchor': 'middle'
-      }, 'ahorro marginal');
-      textEl.appendChild(textPathEl);
-      svg.appendChild(textEl);
-    }
 
     const tp = pt(diffR, aMid);
     svg.appendChild(el('text', {
@@ -469,6 +455,39 @@ function draw(distanceKm){
       }));
     });
   });
+
+  const marginalMeta = validDiffsMeta.filter(m => m.diff < marginalThreshold);
+  if (marginalMeta.length) {
+    const startV = Math.min(...marginalMeta.map(m => m.v1));
+    const endV = maxV;
+    const aStartCurve = angleFor(startV);
+    const aEndCurve = angleFor(endV);
+    const textCurveR = blueRadius + 30;
+    const curvePath = arcPath(textCurveR, aStartCurve, aEndCurve);
+
+    const pathId = 'marginal-path-total';
+    defs.appendChild(el('path', { id: pathId, d: curvePath, fill: 'none' }));
+
+    const arcSpanDeg = (endV - startV) / (maxV - minV) * sweep;
+    const arcLengthPx = textCurveR * arcSpanDeg * Math.PI / 180;
+
+    const textEl = el('text', {
+      'font-family': 'IBM Plex Mono, monospace',
+      'font-weight': 700,
+      'font-size': 14,
+      'letter-spacing': '2px',
+      fill: 'var(--diff-low)'
+    });
+    const textPathEl = el('textPath', {
+      href: `#${pathId}`,
+      'startOffset': '50%',
+      'text-anchor': 'middle',
+      textLength: (arcLengthPx * 0.94).toFixed(1),
+      lengthAdjust: 'spacingAndGlyphs'
+    }, 'AHORRO MARGINAL');
+    textEl.appendChild(textPathEl);
+    svg.appendChild(textEl);
+  }
 
   svg.appendChild(defs);
 
@@ -536,12 +555,20 @@ function startGPS(){
   }
   speedSamples = [];
   startTime = Date.now();
+  distanceTraveledKm = 0;
+  lastSampleTime = null;
   setStatus('Pidiendo permiso de ubicación…');
   watchId = navigator.geolocation.watchPosition(
     pos => {
       let speedMs = pos.coords.speed;
       if (speedMs == null || isNaN(speedMs)) speedMs = 0;
       const kmh = speedMs * 3.6;
+      const now = Date.now();
+      if (lastSampleTime !== null){
+        const dtHours = (now - lastSampleTime) / 3600000;
+        distanceTraveledKm += kmh * dtHours;
+      }
+      lastSampleTime = now;
       updateNeedle(kmh);
       setStatus(`GPS activo: ${kmh.toFixed(1)} km/h`);
     },
@@ -567,44 +594,50 @@ function stopGPS(){
   setStatus('GPS detenido.');
   updateNeedle(0);
 
-  // Calcular velocidad promedio
+  // Calcular velocidad promedio real (distancia recorrida / tiempo total)
+  const totalHours = startTime ? (Date.now() - startTime) / 3600000 : 0;
   let avgSpeed = 0;
-  if (speedSamples.length > 0) {
+  if (totalHours > 0 && distanceTraveledKm > 0) {
+    avgSpeed = distanceTraveledKm / totalHours;
+  } else if (speedSamples.length > 0) {
     const sum = speedSamples.reduce((a, b) => a + b, 0);
     avgSpeed = sum / speedSamples.length;
   }
 
-  showReport(avgSpeed);
+  showReport(avgSpeed, distanceTraveledKm);
 }
 
-function showReport(avgSpeed){
-  reportAvgText.textContent = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h`;
+function showReport(avgSpeed, distanceTraveledKm){
+  reportAvgText.textContent = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h — Distancia recorrida: ${distanceTraveledKm.toFixed(2)} km`;
   reportSavingsList.innerHTML = '';
 
-  const d = currentDist();
-  const targetSpeeds = [80, 100, 120, 140];
+  const d = distanceTraveledKm;
 
-  // Tiempo real estimado con la velocidad promedio (si es 0, evitamos división por cero)
-  const effectiveAvg = avgSpeed > 1 ? avgSpeed : 1;
-  const timeActualHours = d / effectiveAvg;
+  if (avgSpeed > 0 && avgSpeed < 80 && d > 0) {
+    const timeActualMin = (d / avgSpeed) * 60;
+    const time80Min = (d / 80) * 60;
+    const time100Min = (d / 100) * 60;
+    const time120Min = (d / 120) * 60;
 
-  targetSpeeds.forEach(targetV => {
-    if (avgSpeed < targetV) {
-      const timeTargetHours = d / targetV;
-      const diffHours = timeActualHours - timeTargetHours;
-      const diffMinutes = diffHours * 60;
+    const save80 = timeActualMin - time80Min;
+    const save100 = time80Min - time100Min;
+    const save120 = time100Min - time120Min;
 
+    const lines = [
+      `A 80 km/hr habrías ahorrado solo <span>${save80.toFixed(1)} min</span>.`,
+      `A 100 km/hr habrías ahorrado solo <span>${save100.toFixed(1)} min</span> más.`,
+      `Y a 120 km/hr habrías ahorrado solo <span>${save120.toFixed(1)} min</span> más.`
+    ];
+    lines.forEach(html => {
       const item = document.createElement('div');
       item.className = 'report-saving-item';
-      item.innerHTML = `Si hubieras ido a <b>${targetV} km/h</b> habrías ahorrado <span>${diffMinutes.toFixed(1)} min</span>`;
+      item.innerHTML = html;
       reportSavingsList.appendChild(item);
-    }
-  });
-
-  if (reportSavingsList.children.length === 0) {
+    });
+  } else {
     const item = document.createElement('div');
     item.className = 'report-saving-item';
-    item.textContent = 'Tu velocidad promedio fue alta, no hay ahorros que mostrar para los límites seleccionados.';
+    item.textContent = 'Tu velocidad promedio fue de 80 km/h o más, no hay ahorros marginales que mostrar.';
     reportSavingsList.appendChild(item);
   }
 
