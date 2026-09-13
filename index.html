@@ -247,7 +247,7 @@ svg{display:block; width:100%; height:100%;}
 </head>
 <body>
 <div class="wrap">
-  <p class="subtitle">Cuando manejas, mientras más aceleras menos te demoras, sin embargo, ese ahorro no es parejo; pasar de 40 a 60 km/h te ahorra mucho más tiempo que pasar de 100 a 120 km/h[cite: 1], aunque en ambos casos aceleres lo mismo[cite: 1]. Agrega los kilómetros que recorrerás a este velocímetro y mira cómo la escala azul exterior marca los minutos que tardarás en recorrer la distancia que elijas[cite: 1].</p>
+  <p class="subtitle">Cuando manejas, mientras más aceleras menos te demoras, sin embargo, ese ahorro no es parejo; pasar de 40 a 60 km/h te ahorra mucho más tiempo que pasar de 100 a 120 km/h, aunque en ambos casos aceleres lo mismo. Agrega los kilómetros que recorrerás a este velocímetro y mira cómo la escala azul exterior marca los minutos que tardarás en recorrer la distancia que elijas.</p>
 
   <div class="gauge-shell">
     <div class="gauge-frame">
@@ -608,25 +608,31 @@ function stopGPS(){
 }
 
 function showReport(avgSpeed, distanceTraveledKm){
-  reportAvgText.textContent = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h — Distancia recorrida: ${distanceTraveledKm.toFixed(2)} km`;
+  reportAvgText.innerHTML = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h<br>Distancia recorrida: ${distanceTraveledKm.toFixed(2)} km`;
   reportSavingsList.innerHTML = '';
 
   const d = distanceTraveledKm;
 
-  if (avgSpeed > 0 && avgSpeed < 80 && d > 0) {
+  if (avgSpeed > 0 && avgSpeed < 60 && d > 0) {
     const timeActualMin = (d / avgSpeed) * 60;
+    const time60Min = (d / 60) * 60;
     const time80Min = (d / 80) * 60;
     const time100Min = (d / 100) * 60;
     const time120Min = (d / 120) * 60;
+    const time140Min = (d / 140) * 60;
 
-    const save80 = timeActualMin - time80Min;
+    const save60 = timeActualMin - time60Min;
+    const save80 = time60Min - time80Min;
     const save100 = time80Min - time100Min;
     const save120 = time100Min - time120Min;
+    const save140 = time120Min - time140Min;
 
     const lines = [
-      `A 80 km/hr habrías ahorrado solo <span>${save80.toFixed(1)} min</span>.`,
+      `A 60 km/hr habrías ahorrado solo <span>${save60.toFixed(1)} min</span>.`,
+      `A 80 km/hr habrías ahorrado solo <span>${save80.toFixed(1)} min</span> más.`,
       `A 100 km/hr habrías ahorrado solo <span>${save100.toFixed(1)} min</span> más.`,
-      `Y a 120 km/hr habrías ahorrado solo <span>${save120.toFixed(1)} min</span> más.`
+      `A 120 km/hr habrías ahorrado solo <span>${save120.toFixed(1)} min</span> más.`,
+      `Y a 140 km/hr habrías ahorrado solo <span>${save140.toFixed(1)} min</span> más.`
     ];
     lines.forEach(html => {
       const item = document.createElement('div');
@@ -637,7 +643,7 @@ function showReport(avgSpeed, distanceTraveledKm){
   } else {
     const item = document.createElement('div');
     item.className = 'report-saving-item';
-    item.textContent = 'Tu velocidad promedio fue de 80 km/h o más, no hay ahorros marginales que mostrar.';
+    item.textContent = 'Tu velocidad promedio fue de 60 km/h o más, no hay ahorros marginales que mostrar.';
     reportSavingsList.appendChild(item);
   }
 
