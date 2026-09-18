@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Papito No Corras</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600;700&display=swap');
+
+:root{
+  --asphalt:#14171a;
+  --asphalt-2:#1d2226;
+  --line:#2b3136;
+  --paint:#eceff1;
+  --paint-dim:#8a9199;
+  --marker:#f2b705;
+  --marker-dim:#7a610a;
+  --face:#f4f2eb;
+  --face-line:#8d8a80;
+  --ink:#161513;
+  --blue:#1c3f8f;
+  --diff:#7a610a;
+  --diff-low:#a85c18;
+  --orange:#e0823c;
+  --danger:#c1443a;
+}
+
+*{box-sizing:border-box;}
+
+html, body{
+  height:100%;
+  margin:0;
+  overscroll-behavior:none;
+}
+
+body{
+  background:var(--asphalt);
+  color:var(--paint);
+  font-family:'IBM Plex Mono', monospace;
+  height:100dvh;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  padding:4px 4px calc(4px + env(safe-area-inset-bottom)) 4px;
+}
+
+.wrap{
+  width:100%;
+  max-width:520px;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow:hidden;
+}
+
+.subtitle{
+  flex:0 0 auto;
+  font-family:'IBM Plex Mono', monospace;
+  font-weight:500;
+  color:#0b0b0c;
+  background:var(--face);
+  border:1px solid var(--face-line);
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:11px;
+  text-align:justify;
+  margin:0;
+  line-height:1.35;
+}
+
+.gauge-shell{
+  position:relative;
+  flex:1 1 auto;
+  min-height:0;
+  background:var(--asphalt-2);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:2px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.gauge-frame{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  max-width:100%;
+  max-height:100%;
+}
+svg{display:block; width:100%; height:100%;}
+
+.dist-overlay{
+  position:absolute;
+  left:50%;
+  bottom:9%;
+  transform:translateX(-50%);
+  width:34%;
+  text-align:center;
+  box-sizing:border-box;
+}
+.dist-overlay-label{
+  font-family:'Oswald', sans-serif;
+  font-size:11px;
+  font-weight:600;
+  color:var(--ink);
+  line-height:1.25;
+  margin-bottom:4px;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+}
+.dist-overlay-inputrow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+}
+.dist-overlay input{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  flex:1 1 auto;
+  background:var(--asphalt);
+  border:1px solid var(--line);
+  color:var(--paint);
+  font-family:'IBM Plex Mono', monospace;
+  font-size:13px;
+  text-align:center;
+  padding:4px 2px;
+  border-radius:6px;
+}
+.dist-overlay input:focus{outline:none; border-color:var(--marker);}
+.dist-overlay-unit{
+  flex:0 0 auto;
+  font-family:'Oswald', sans-serif;
+  font-weight:600;
+  font-size:12px;
+  color:var(--marker);
+}
+
+/* Informe grande sobre el velocímetro */
+.report-overlay{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(20, 23, 26, 0.96);
+  z-index:20;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  text-align:center;
+  border-radius:10px;
+  overflow-y:auto;
+}
+.report-overlay.active{
+  display:flex;
+}
+.report-title{
+  font-family:'Oswald', sans-serif;
+  font-size:22px;
+  font-weight:700;
+  color:var(--marker);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+.report-avg{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:16px;
+  font-weight:600;
+  color:var(--paint);
+  margin-bottom:14px;
+}
+.report-savings-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  width:100%;
+  max-width:360px;
+  margin-bottom:16px;
+}
+.report-saving-item{
+  background:var(--asphalt);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:12px;
+  color:var(--paint-dim);
+}
+.report-saving-item span{
+  color:var(--marker);
+  font-weight:700;
+}
+.report-close-btn{
+  background:var(--danger);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:8px 20px;
+  font-family:'Oswald', sans-serif;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+}
+
+.panel{
+  flex:0 0 auto;
+  background:var(--asphalt-2);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:6px 10px;
+}
+
+.gps-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top:0;
+  padding-top:0;
+  border-top:none;
+}
+.gps-btn{
+  background:var(--marker-dim);
+  color:var(--marker);
+  border:1px solid var(--marker-dim);
+  border-radius:6px;
+  padding:8px 14px;
+  font-family:'Oswald', sans-serif;
+  font-weight:500;
+  font-size:12px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.gps-btn.active{ background:var(--danger); color:#fff; border-color:var(--danger); }
+.gps-status{
+  font-size:12px;
+  color:var(--paint-dim);
+  line-height:1.4;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="subtitle">Cuando manejas, mientras más aceleras menos te demoras, sin embargo, ese ahorro no es parejo; pasar de 40 a 60 km/h te ahorra mucho más tiempo que pasar de 100 a 120 km/h, aunque en ambos casos aceleres lo mismo. Agrega los kilómetros que recorrerás a este velocímetro y mira cómo la escala azul exterior marca los minutos que tardarás en recorrer la distancia que elijas.</p>
+
+  <div class="gauge-shell">
+    <div class="gauge-frame">
+      <svg id="gauge" viewBox="0 0 510 510"></svg>
+      <div class="dist-overlay">
+        <div class="dist-overlay-label">ingresa kilometros que recorreras</div>
+        <div class="dist-overlay-inputrow">
+          <input type="number" id="distInput" value="10" step="0.1" min="0.1">
+          <span class="dist-overlay-unit">Km</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informe grande sobre el velocímetro -->
+    <div class="report-overlay" id="reportOverlay">
+      <div class="report-title">Informe de Viaje</div>
+      <div class="report-avg" id="reportAvgText">Velocidad promedio: 0.0 km/h</div>
+      <div class="report-savings-list" id="reportSavingsList"></div>
+      <button class="report-close-btn" id="reportCloseBtn">CERRAR INFORME</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="gps-row">
+      <button class="gps-btn" id="gpsBtn">ACTIVAR VELOCIMETRO</button>
+      <div class="gps-status" id="gpsStatus"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const cx = 255, cy = 255, R = 165, faceR = 248;
+const minV = 0, maxV = 200; 
+const startAngle = 240, sweep = 240;
+
+function angleFor(v){
+  return (startAngle + ((v - minV) / (maxV - minV)) * sweep) % 360;
+}
+function pt(radius, angleDeg){
+  const r = angleDeg * Math.PI / 180;
+  return { x: cx + radius * Math.sin(r), y: cy - radius * Math.cos(r) };
+}
+function el(tag, attrs, text){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function arcPath(radius, a1, a2){
+  const p1 = pt(radius, a1), p2 = pt(radius, a2);
+  const large = ((a2 - a1 + 360) % 360) > 180 ? 1 : 0;
+  return `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${radius} ${radius} 0 ${large} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+}
+
+const svg = document.getElementById('gauge');
+let needleGroup = null;
+let currentSpeedKmh = 0;
+
+// Variables para el registro de viaje
+let speedSamples = [];
+let startTime = null;
+let distanceTraveledKm = 0;
+let lastSampleTime = null;
+
+function formatMinutes(m){
+  if (m >= 60){
+    const totalMin = Math.round(m);
+    const h = Math.floor(totalMin / 60);
+    const mm = totalMin % 60;
+    return `${h}h:${mm.toString().padStart(2,'0')}`;
+  }
+  if (m >= 10) return Math.round(m).toString();
+  return m.toFixed(1);
+}
+
+function formatMinutesLabel(m){
+  const base = formatMinutes(m);
+  return m >= 60 ? base : `${base} min`;
+}
+
+function draw(distanceKm){
+  svg.innerHTML = '';
+
+  const defs = el('defs', {});
+  
+  const blueSpeeds = [];
+  for (let v = 20; v <= maxV; v += 20) { blueSpeeds.push(v); }
+  const blueMinutes = blueSpeeds.map(v => (distanceKm / v) * 60);
+  
+  let diffsValues = [];
+  let validDiffsMeta = [];
+  for (let i = 0; i < blueSpeeds.length - 1; i++){
+    const m1 = blueMinutes[i], m2 = blueMinutes[i+1];
+    const diff = m1 - m2;
+    if (diff > 0.05) {
+      diffsValues.push(diff);
+      validDiffsMeta.push({ i, v1: blueSpeeds[i], v2: blueSpeeds[i+1], diff });
+    }
+  }
+  const minDiff = diffsValues.length ? Math.min(...diffsValues) : 0;
+  const maxDiff = diffsValues.length ? Math.max(...diffsValues) : 1;
+
+  const ref2040 = (distanceKm / 20 * 60) - (distanceKm / 40 * 60);
+  const marginalThreshold = ref2040 / 15;
+
+  svg.appendChild(el('circle', {cx, cy, r:faceR, fill:'var(--face)', stroke:'var(--face-line)', 'stroke-width':1.5}));
+
+  svg.appendChild(el('path', {
+    d: arcPath(R, startAngle, (startAngle+sweep)%360),
+    fill:'none', stroke:'var(--orange)', 'stroke-width':5, 'stroke-dasharray':'2 6', 'stroke-linecap':'round'
+  }));
+
+  for (let v = minV; v <= maxV; v += 10){
+    const isMajor = v % 20 === 0;
+    const a = angleFor(v);
+    const outerR = R, innerR = isMajor ? R-16 : R-8;
+    const p1 = pt(outerR, a), p2 = pt(innerR, a);
+    const isRedZone = v >= maxV - 20;
+    svg.appendChild(el('line', {
+      x1:p1.x.toFixed(2), y1:p1.y.toFixed(2), x2:p2.x.toFixed(2), y2:p2.y.toFixed(2),
+      stroke: isRedZone ? 'var(--danger)' : 'var(--ink)',
+      'stroke-width': isMajor ? 3 : 1.5
+    }));
+    if (isMajor){
+      const lp = pt(R-35, a);
+      svg.appendChild(el('text', {
+        x:lp.x.toFixed(2), y:lp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
+        'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':22,
+        fill: isRedZone ? 'var(--danger)' : 'var(--ink)'
+      }, v));
+    }
+  }
+
+  const minMin = Math.min(...blueMinutes);
+  const maxMin = Math.max(...blueMinutes);
+  const minFont = 12, maxFont = 21;
+  const blueRadius = R + 32;
+  const marginToEdge = faceR - blueRadius;
+  blueSpeeds.forEach((v, i) => {
+    const a = angleFor(v);
+    const minutes = blueMinutes[i];
+    const label = formatMinutesLabel(minutes);
+    const t = maxMin > minMin ? (minutes - minMin) / (maxMin - minMin) : 0;
+    let fontSize = minFont + (maxFont - minFont) * t;
+    const maxFontForLabel = (marginToEdge * 2) / (label.length * 0.62);
+    fontSize = Math.max(minFont, Math.min(fontSize, maxFontForLabel, maxFont));
+    const bp = pt(blueRadius, a);
+    svg.appendChild(el('text', {
+      x:bp.x.toFixed(2), y:bp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
+      'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':fontSize.toFixed(1), fill:'var(--blue)'
+    }, label));
+  });
+
+  const diffR = R + 14;
+  const minDiffFont = 8;   
+  const maxDiffFont = 13;  
+
+  validDiffsMeta.forEach((meta) => {
+    const { v1, v2, diff } = meta;
+    const midV = (v1 + v2) / 2;
+    const aMid = angleFor(midV);
+    const diffLabel = formatMinutes(diff);
+
+    let tNorm = maxDiff > minDiff ? (diff - minDiff) / (maxDiff - minDiff) : 0.5;
+    let diffFontSize = minDiffFont + (maxDiffFont - minDiffFont) * tNorm;
+    diffFontSize = Math.max(minDiffFont, diffFontSize);
+
+    const isLessThan10 = diff < marginalThreshold;
+    const diffColor = isLessThan10 ? 'var(--diff-low)' : 'var(--diff)';
+
+    const tp = pt(diffR, aMid);
+    svg.appendChild(el('text', {
+      x:tp.x.toFixed(2), y:tp.y.toFixed(2), 'text-anchor':'middle', 'dominant-baseline':'middle',
+      'font-family':'IBM Plex Mono, monospace', 'font-weight':700, 'font-size':diffFontSize.toFixed(1), fill:diffColor, opacity:0.95,
+      transform:`rotate(${aMid.toFixed(2)} ${tp.x.toFixed(2)} ${tp.y.toFixed(2)})`
+    }, diffLabel));
+
+    function angleOffset(vCenter, deg){
+      const vPerDeg = (maxV - minV) / sweep;
+      return angleFor(vCenter + deg * vPerDeg);
+    }
+
+    const textGap = Math.max(4.2, diffFontSize * 0.42);   
+    const arrowSpan = 3; 
+
+    [-1, 1].forEach(dir => {
+      const aInner = angleOffset(midV, dir * textGap);
+      const aOuter = angleOffset(midV, dir * (textGap + arrowSpan));
+      svg.appendChild(el('path', {
+        d: arcPath(diffR, dir === -1 ? aOuter : aInner, dir === -1 ? aInner : aOuter),
+        fill:'none', stroke:diffColor, 'stroke-width':1.6, opacity:0.9, 'stroke-linecap':'round'
+      }));
+      const aRad = aOuter * Math.PI / 180;
+      const tangent = { x: Math.cos(aRad) * dir, y: Math.sin(aRad) * dir };
+      const normal = { x: -tangent.y, y: tangent.x };
+      const tip = pt(diffR, aOuter);
+      const tLen = 5, tWidth = 4.5;
+      const back = { x: tip.x - tangent.x * tLen, y: tip.y - tangent.y * tLen };
+      const c1 = { x: back.x + normal.x * tWidth/2, y: back.y + normal.y * tWidth/2 };
+      const c2 = { x: back.x - normal.x * tWidth/2, y: back.y - normal.y * tWidth/2 };
+      svg.appendChild(el('polygon', {
+        points: `${tip.x.toFixed(2)},${tip.y.toFixed(2)} ${c1.x.toFixed(2)},${c1.y.toFixed(2)} ${c2.x.toFixed(2)},${c2.y.toFixed(2)}`,
+        fill:diffColor, opacity:0.9
+      }));
+    });
+  });
+
+  const marginalMeta = validDiffsMeta.filter(m => m.diff < marginalThreshold);
+  if (marginalMeta.length) {
+    const startV = Math.min(...marginalMeta.map(m => m.v1));
+    const endV = maxV;
+    const aStartCurve = angleFor(startV);
+    const aEndCurve = angleFor(endV);
+    const textCurveR = blueRadius + 30;
+    const curvePath = arcPath(textCurveR, aStartCurve, aEndCurve);
+
+    const pathId = 'marginal-path-total';
+    defs.appendChild(el('path', { id: pathId, d: curvePath, fill: 'none' }));
+
+    const arcSpanDeg = (endV - startV) / (maxV - minV) * sweep;
+    const arcLengthPx = textCurveR * arcSpanDeg * Math.PI / 180;
+
+    const textEl = el('text', {
+      'font-family': 'IBM Plex Mono, monospace',
+      'font-weight': 700,
+      'font-size': 14,
+      'letter-spacing': '2px',
+      fill: 'var(--diff-low)'
+    });
+    const textPathEl = el('textPath', {
+      href: `#${pathId}`,
+      'startOffset': '50%',
+      'text-anchor': 'middle',
+      textLength: (arcLengthPx * 0.94).toFixed(1),
+      lengthAdjust: 'spacingAndGlyphs'
+    }, 'AHORRO MARGINAL');
+    textEl.appendChild(textPathEl);
+    svg.appendChild(textEl);
+  }
+
+  svg.appendChild(defs);
+
+  svg.appendChild(el('text', {x:cx, y:cy-2, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':700, 'font-size':17, fill:'var(--ink)'}, 'Kilómetros por hora'));
+  const distLabel = distanceKm % 1 === 0 ? distanceKm.toFixed(0) : distanceKm.toFixed(1);
+  svg.appendChild(el('text', {x:cx, y:cy+20, 'text-anchor':'middle', 'font-family':'Oswald, sans-serif', 'font-weight':600, 'font-size':12, fill:'var(--blue)'}, `Tiempo en que se recorren ${distLabel} km`));
+
+  const liveSpeed = el('text', {x:cx, y:cy+44, 'text-anchor':'middle', 'font-family':'IBM Plex Mono, monospace', 'font-weight':600, 'font-size':16, fill:'var(--danger)'}, '');
+  liveSpeed.id = 'liveSpeedText';
+  svg.appendChild(liveSpeed);
+
+  needleGroup = el('g', {});
+  needleGroup.appendChild(el('line', {x1:cx, y1:cy, x2:cx, y2:cy-R+15, stroke:'var(--danger)', 'stroke-width':4, 'stroke-linecap':'round'}));
+  needleGroup.appendChild(el('circle', {cx, cy, r:8, fill:'var(--danger)', stroke:'var(--ink)', 'stroke-width':1.5}));
+  svg.appendChild(needleGroup);
+}
+
+function updateNeedle(speedKmh){
+  currentSpeedKmh = speedKmh;
+  if (!needleGroup) return;
+  const clamped = Math.max(minV, Math.min(maxV, speedKmh));
+  const a = angleFor(clamped);
+  needleGroup.setAttribute('transform', `rotate(${a} ${cx} ${cy})`);
+  const liveSpeed = document.getElementById('liveSpeedText');
+  if (liveSpeed) liveSpeed.textContent = gpsActive ? `${speedKmh.toFixed(1)} km/h` : '';
+
+  if (gpsActive) {
+    speedSamples.push(speedKmh);
+  }
+}
+
+const distInput = document.getElementById('distInput');
+const gpsBtn = document.getElementById('gpsBtn');
+const gpsStatus = document.getElementById('gpsStatus');
+const reportOverlay = document.getElementById('reportOverlay');
+const reportAvgText = document.getElementById('reportAvgText');
+const reportSavingsList = document.getElementById('reportSavingsList');
+const reportCloseBtn = document.getElementById('reportCloseBtn');
+
+let gpsActive = false;
+let watchId = null;
+
+function currentDist(){
+  const v = parseFloat(distInput.value);
+  return (isNaN(v) || v <= 0) ? 10 : v;
+}
+function refresh(){
+  const d = currentDist();
+  draw(d);
+  updateNeedle(currentSpeedKmh);
+}
+
+distInput.addEventListener('input', refresh);
+
+function setStatus(msg){ gpsStatus.textContent = msg; }
+
+function startGPS(){
+  if (!('geolocation' in navigator)){
+    setStatus('Este navegador no soporta geolocalización.');
+    return;
+  }
+  if (!window.isSecureContext){
+    setStatus('El GPS necesita HTTPS. Subilo a un hosting con https y abrilo desde ahí.');
+    return;
+  }
+  speedSamples = [];
+  startTime = Date.now();
+  distanceTraveledKm = 0;
+  lastSampleTime = null;
+  setStatus('Pidiendo permiso de ubicación…');
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      let speedMs = pos.coords.speed;
+      if (speedMs == null || isNaN(speedMs)) speedMs = 0;
+      const kmh = speedMs * 3.6;
+      const now = Date.now();
+      if (lastSampleTime !== null){
+        const dtHours = (now - lastSampleTime) / 3600000;
+        distanceTraveledKm += kmh * dtHours;
+      }
+      lastSampleTime = now;
+      updateNeedle(kmh);
+      setStatus(`GPS activo: ${kmh.toFixed(1)} km/h`);
+    },
+    err => {
+      setStatus('No se pudo usar el GPS (' + err.message + ').');
+      gpsActive = false;
+      gpsBtn.classList.remove('active');
+      gpsBtn.textContent = 'ACTIVAR VELOCIMETRO';
+    },
+    { enableHighAccuracy:true, maximumAge:1000, timeout:15000 }
+  );
+  gpsActive = true;
+  gpsBtn.classList.add('active');
+  gpsBtn.textContent = 'DETENER VELOCIMETRO';
+}
+
+function stopGPS(){
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  gpsActive = false;
+  gpsBtn.classList.remove('active');
+  gpsBtn.textContent = 'ACTIVAR VELOCIMETRO';
+  setStatus('GPS detenido.');
+  updateNeedle(0);
+
+  // Calcular velocidad promedio real (distancia recorrida / tiempo total)
+  const totalHours = startTime ? (Date.now() - startTime) / 3600000 : 0;
+  let avgSpeed = 0;
+  if (totalHours > 0 && distanceTraveledKm > 0) {
+    avgSpeed = distanceTraveledKm / totalHours;
+  } else if (speedSamples.length > 0) {
+    const sum = speedSamples.reduce((a, b) => a + b, 0);
+    avgSpeed = sum / speedSamples.length;
+  }
+
+  showReport(avgSpeed, distanceTraveledKm);
+}
+
+function showReport(avgSpeed, distanceTraveledKm){
+  reportAvgText.innerHTML = `Velocidad promedio: ${avgSpeed.toFixed(1)} km/h<br>Distancia recorrida: ${distanceTraveledKm.toFixed(2)} km`;
+  reportSavingsList.innerHTML = '';
+
+  const d = distanceTraveledKm;
+
+  if (avgSpeed > 0 && avgSpeed < 60 && d > 0) {
+    const timeActualMin = (d / avgSpeed) * 60;
+    const time60Min = (d / 60) * 60;
+    const time80Min = (d / 80) * 60;
+    const time100Min = (d / 100) * 60;
+    const time120Min = (d / 120) * 60;
+    const time140Min = (d / 140) * 60;
+
+    const save60 = timeActualMin - time60Min;
+    const save80 = time60Min - time80Min;
+    const save100 = time80Min - time100Min;
+    const save120 = time100Min - time120Min;
+    const save140 = time120Min - time140Min;
+
+    const lines = [
+      `A 60 km/hr habrías ahorrado solo <span>${save60.toFixed(1)} min</span>.`,
+      `A 80 km/hr habrías ahorrado solo <span>${save80.toFixed(1)} min</span> más.`,
+      `A 100 km/hr habrías ahorrado solo <span>${save100.toFixed(1)} min</span> más.`,
+      `A 120 km/hr habrías ahorrado solo <span>${save120.toFixed(1)} min</span> más.`,
+      `Y a 140 km/hr habrías ahorrado solo <span>${save140.toFixed(1)} min</span> más.`
+    ];
+    lines.forEach(html => {
+      const item = document.createElement('div');
+      item.className = 'report-saving-item';
+      item.innerHTML = html;
+      reportSavingsList.appendChild(item);
+    });
+  } else {
+    const item = document.createElement('div');
+    item.className = 'report-saving-item';
+    item.textContent = 'Tu velocidad promedio fue de 60 km/h o más, no hay ahorros marginales que mostrar.';
+    reportSavingsList.appendChild(item);
+  }
+
+  reportOverlay.classList.add('active');
+}
+
+reportCloseBtn.addEventListener('click', () => {
+  reportOverlay.classList.remove('active');
+});
+
+gpsBtn.addEventListener('click', () => {
+  if (gpsActive) stopGPS(); else startGPS();
+});
+
+refresh();
+</script>
+</body>
+</html>
